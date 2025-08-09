@@ -1,59 +1,358 @@
-<!DOCTYPE html><html lang="zh-CN"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>贪吃蛇 - Snake</title>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>贪吃蛇 · 彩色豪华版</title>
 <style>
-:root{--bg:#0f172a;--fg:#e2e8f0;--accent:#22d3ee}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;display:grid;place-items:center;min-height:100vh;padding:16px}
-.wrap{width:100%;max-width:540px;display:grid;gap:12px}h1{margin:0;font-size:20px;text-align:center}
-.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.stats{display:flex;gap:10px;font-size:14px;opacity:.9}.btn{background:#1f2937;color:var(--fg);border:1px solid #334155;padding:8px 12px;border-radius:10px}
-canvas{width:100%;background:#020617;border-radius:14px;border:1px solid #334155;aspect-ratio:1;touch-action:none}
-.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;user-select:none}
-.pad{background:#111827;border:1px solid #374151;border-radius:12px;padding:14px;text-align:center;font-weight:700}
-.pad:active{transform:scale(.98);border-color:var(--accent)}footer{text-align:center;font-size:12px;opacity:.6}
-.pill{padding:2px 8px;border-radius:999px;border:1px solid #334155}
+:root{
+  --bg:#0b1220; --panel:#111827; --line:#263246; --fg:#e5e7eb;
+  --accent:#7c3aed; --ok:#22c55e; --warn:#f59e0b; --cool:#38bdf8; --bad:#ef4444;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background: radial-gradient(1000px 600px at 10% -10%, #1d2640 0%, #0b1220 40%, #090f1a 100%);
+  color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  min-height:100vh; display:grid; place-items:center; padding:16px;
+}
+.wrap{width:100%; max-width:620px; display:grid; gap:12px}
+.top{display:flex; justify-content:space-between; align-items:center; gap:8px}
+h1{margin:0; font-size:20px; letter-spacing:.5px}
+.stats{display:flex; gap:8px; flex-wrap:wrap}
+.pill{border:1px solid #334155; padding:4px 10px; border-radius:999px; background:rgba(17,24,39,.6); backdrop-filter: blur(4px); font-size:13px}
+.btn{
+  border:1px solid #475569; background:linear-gradient(180deg,#111827,#0f172a); color:var(--fg);
+  padding:8px 12px; border-radius:12px; cursor:pointer;
+}
+.btn:hover{border-color:var(--accent)}
+.board{
+  position:relative; border:1px solid #334155; border-radius:16px; overflow:hidden;
+  background: radial-gradient(900px 500px at 80% -20%, rgba(124,58,237,.15), transparent),
+              radial-gradient(900px 500px at 20% 120%, rgba(56,189,248,.12), transparent),
+              #020617;
+}
+canvas{width:100%; aspect-ratio:1; display:block; touch-action:none}
+.controls{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.pad{background:#0f172a; border:1px solid #334155; border-radius:12px; padding:16px; text-align:center; font-weight:700}
+.pad:active{transform:scale(.98); border-color:var(--accent)}
+.legend{display:flex; gap:8px; flex-wrap:wrap; font-size:12px; opacity:.9}
+.dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:-1px}
+footer{opacity:.6; text-align:center; font-size:12px}
 </style>
-<body><div class="wrap"><h1>🐍 贪吃蛇 Snake</h1>
-<div class="top"><div class="stats">
-<div class="pill">分数 <span id="score">0</span></div>
-<div class="pill">最高 <span id="best">0</span></div>
-<div class="pill">速度 <span id="speed">1x</span></div></div>
-<div><button class="btn" id="btnPause">暂停</button>
-<button class="btn" id="btnRestart">重开</button></div></div>
-<canvas id="board" width="420" height="420"></canvas>
-<div class="controls" id="touchControls"><div></div>
-<button class="pad" data-dir="up">↑</button><div></div>
-<button class="pad" data-dir="left">←</button>
-<button class="pad" data-dir="down">↓</button>
-<button class="pad" data-dir="right">→</button><div></div>
-<button class="pad" id="padPause">暂停/继续</button><div></div></div>
-<footer>键盘：↑↓←→ / WASD；P 暂停；R 重开。</footer></div>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>🌈 贪吃蛇 · 彩色豪华版</h1>
+      <div>
+        <button class="btn" id="btnPause">暂停</button>
+        <button class="btn" id="btnRestart">重开</button>
+      </div>
+    </div>
+
+    <div class="top">
+      <div class="stats">
+        <div class="pill">分数 <span id="score">0</span></div>
+        <div class="pill">最高 <span id="best">0</span></div>
+        <div class="pill">等级 <span id="level">1</span></div>
+        <div class="pill">速度 <span id="speed">1x</span></div>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:#22c55e"></i>普通</span>
+        <span><i class="dot" style="background:#f59e0b"></i>⭐加分</span>
+        <span><i class="dot" style="background:#38bdf8"></i>❄减速</span>
+        <span><i class="dot" style="background:#ef4444"></i>障碍</span>
+      </div>
+    </div>
+
+    <div class="board"><canvas id="c" width="540" height="540"></canvas></div>
+
+    <div class="controls" id="touchCtrls">
+      <div></div><button class="pad" data-d="up">↑</button><div></div>
+      <button class="pad" data-d="left">←</button>
+      <button class="pad" data-d="down">↓</button>
+      <button class="pad" data-d="right">→</button>
+      <div></div><button class="pad" id="padPause">暂停/继续</button><div></div>
+    </div>
+
+    <footer>键盘：↑↓←→ 或 WASD；P 暂停；R 重开；手机支持滑动</footer>
+  </div>
+
 <script>
-(()=>{const CELL=21,SIZE=21,TICK_BASE=120,c=document.getElementById('board'),x=c.getContext('2d'),
-S=document.getElementById('score'),B=document.getElementById('best'),V=document.getElementById('speed'),
-p=document.getElementById('btnPause'),r=document.getElementById('btnRestart'),tp=document.getElementById('padPause');
-let best=+localStorage.getItem('snake_best')||0;B.textContent=best;let sn,dir,ndir,food,tick,run,score,spd;
-function reset(){sn=[{x:10,y:10},{x:9,y:10},{x:8,y:10}],dir={x:1,y:0},ndir={x:1,y:0},food=spawn(),tick=0,run=true,score=0,spd=1,ui()}
-function ui(){S.textContent=score;B.textContent=best;V.textContent=spd+'x';p.textContent=run?'暂停':'继续';tp.textContent=run?'暂停':'继续'}
-function spawn(){for(;;){const p={x:Math.floor(Math.random()*SIZE),y:Math.floor(Math.random()*SIZE)};if(!sn.some(s=>s.x===p.x&&s.y===p.y))return p}}
-function step(){if(!run)return;tick++;const s=Math.max(40,TICK_BASE-(spd-1)*15);if(tick%Math.floor(s/10)!==0)return;
-dir=ndir;const h={x:sn[0].x+dir.x,y:sn[0].y+dir.y}; if(h.x<0||h.x>=SIZE||h.y<0||h.y>=SIZE)return over();
-if(sn.some(seg=>seg.x===h.x&&seg.y===h.y))return over(); sn.unshift(h);
-if(h.x===food.x&&h.y===food.y){score++;if(score%5===0&&spd<6)spd++;food=spawn()}else sn.pop();draw();ui()}
-function over(){run=false;best=Math.max(best,score);localStorage.setItem('snake_best',best);ui();draw(true)}
-function draw(over=false){x.fillStyle='#020617',x.fillRect(0,0,c.width,c.height);
-for(let y=0;y<SIZE;y++)for(let z=0;z<SIZE;z++){x.strokeStyle='rgba(51,65,85,.25)';x.strokeRect(z*CELL,y*CELL,CELL,CELL)}
-x.fillStyle='#22d3ee',rect(food.x*CELL+3,food.y*CELL+3,CELL-6,CELL-6,6,true);
-sn.forEach((s,i)=>rect(s.x*CELL+2,s.y*CELL+2,CELL-4,CELL-4,6,true,i? '#34d399':'#eab308'));
-if(!run&&over){x.fillStyle='rgba(2,6,23,.6)';x.fillRect(0,0,c.width,c.height);x.fillStyle='#e2e8f0';x.font='bold 28px system-ui';x.textAlign='center';
-x.fillText('游戏结束',c.width/2,c.height/2-10);x.font='16px system-ui';x.fillText('按 R 重开',c.width/2,c.height/2+16)}}
-function rect(a,b,w,h,r,fill=true,color='#34d399'){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);
-x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();x.fillStyle=color;if(fill)x.fill()}
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='arrowup'||k==='w')turn(0,-1);
-if(k==='arrowdown'||k==='s')turn(0,1);if(k==='arrowleft'||k==='a')turn(-1,0);if(k==='arrowright'||k==='d')turn(1,0);
-if(k==='p')toggle();if(k==='r')reset()});function turn(xd,yd){if(xd===-dir.x&&yd===-dir.y)return;ndir={x:xd,y:yd}}
-function toggle(){run=!run;ui()} p.onclick=toggle;r.onclick=reset;tp.onclick=toggle;
-document.getElementById('touchControls').addEventListener('click',e=>{const d=e.target.dataset.dir;
-if(d==='up')turn(0,-1);if(d==='down')turn(0,1);if(d==='left')turn(-1,0);if(d==='right')turn(1,0)});
-reset();function loop(){step();requestAnimationFrame(loop)}draw();requestAnimationFrame(loop)})();
-</script></body></html>
+(()=>{
+// ===== 基本参数 =====
+const GRID = 24;               // 24x24
+const CELL = 22;               // 像素
+const W = GRID*CELL, H = GRID*CELL;
+const BASE_TICK = 115;         // 基础速度（毫秒越小越快）
+const LVL_STEP = 8;            // 每 LVL_STEP 分加一关
+const MAX_SPEED_MUL = 7;
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+let best = +localStorage.getItem('snake_best_rich') || 0;
+$('best').textContent = best;
+
+let state;
+
+// ===== 工具函数 =====
+const randInt = n => (Math.random()*n)|0;
+const eq = (a,b)=>a.x===b.x && a.y===b.y;
+const inSnake = (p)=> state.snake.some(s=>eq(s,p));
+const inObst  = (p)=> state.obstacles.some(o=>eq(o,p));
+function freeSpot(){
+  while(true){
+    const p={x:randInt(GRID), y:randInt(GRID)};
+    if(!inSnake(p) && !inObst(p)) return p;
+  }
+}
+function wrap(val, max){ return (val+max)%max; }
+
+// 彩虹颜色
+function rainbow(i, total, a=1){
+  const t = (i/total);
+  const r = Math.floor(255*Math.abs(Math.sin(Math.PI*t)));
+  const g = Math.floor(255*Math.abs(Math.sin(Math.PI*(t+.33))));
+  const b = Math.floor(255*Math.abs(Math.sin(Math.PI*(t+.66))));
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// 粒子系统（吃到食物时）
+const particles=[];
+function spawnParticles(p, color){
+  for(let i=0;i<10;i++){
+    particles.push({
+      x:p.x*CELL+CELL/2, y:p.y*CELL+CELL/2, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3,
+      life:18, color
+    });
+  }
+}
+function drawParticles(){
+  for(let i=particles.length-1;i>=0;i--){
+    const P=particles[i]; P.x+=P.vx; P.y+=P.vy; P.life--;
+    ctx.fillStyle=P.color.replace('1)', (P.life/18).toFixed(2)+')');
+    ctx.fillRect(P.x, P.y, 3, 3);
+    if(P.life<=0) particles.splice(i,1);
+  }
+}
+
+// ===== 游戏状态与控制 =====
+function reset(){
+  state = {
+    snake: [{x:12,y:12},{x:11,y:12},{x:10,y:12}],
+    dir: {x:1,y:0}, next: {x:1,y:0},
+    food: spawnFood('normal'),
+    bonus: null,
+    slow: null,
+    obstacles: [],
+    score:0, level:1, speedMul:1,
+    freezeTick:0,
+    running:true, tickCnt:0, elapsed:0
+  };
+  // 初始障碍
+  addObstacles(4);
+  updateUI();
+}
+function updateUI(){
+  $('score').textContent = state.score;
+  $('level').textContent = state.level;
+  $('speed').textContent = state.speedMul+'x';
+  $('btnPause').textContent = state.running ? '暂停' : '继续';
+  $('padPause').textContent = state.running ? '暂停/继续' : '继续/暂停';
+}
+
+function addObstacles(n){
+  for(let i=0;i<n;i++){
+    const p = freeSpot();
+    state.obstacles.push(p);
+  }
+}
+
+function spawnFood(kind='normal'){
+  const p = freeSpot();
+  return {kind, pos:p, ttl: kind==='bonus'? 600: null};
+}
+
+// ===== 输入处理 =====
+function turn(x,y){
+  if(x === -state.dir.x && y === -state.dir.y) return;
+  state.next = {x,y};
+}
+window.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(k==='arrowup'||k==='w') turn(0,-1);
+  if(k==='arrowdown'||k==='s') turn(0,1);
+  if(k==='arrowleft'||k==='a') turn(-1,0);
+  if(k==='arrowright'||k==='d') turn(1,0);
+  if(k==='p') toggle();
+  if(k==='r') reset();
+});
+
+$('btnPause').onclick = toggle;
+$('btnRestart').onclick = ()=>reset();
+$('padPause').onclick = toggle;
+
+function toggle(){ state.running=!state.running; updateUI() }
+
+// 触控按钮
+document.getElementById('touchCtrls').addEventListener('click',e=>{
+  const d = e.target.dataset.d;
+  if(d==='up')turn(0,-1); if(d==='down')turn(0,1);
+  if(d==='left')turn(-1,0); if(d==='right')turn(1,0);
+});
+// 滑动手势
+let touchStart=null;
+cv.addEventListener('touchstart',e=>{touchStart = e.touches[0]});
+cv.addEventListener('touchmove',e=>{
+  if(!touchStart) return;
+  const t=e.touches[0]; const dx=t.clientX-touchStart.clientX; const dy=t.clientY-touchStart.clientY;
+  if(Math.abs(dx)+Math.abs(dy) > 24){
+    if(Math.abs(dx)>Math.abs(dy)) turn(Math.sign(dx),0); else turn(0,Math.sign(dy));
+    touchStart=null;
+  }
+});
+cv.addEventListener('touchend',()=>touchStart=null);
+
+// ===== 逻辑更新 =====
+function step(dt){
+  if(!state.running) return;
+
+  state.elapsed += dt;
+  const slowBonus = state.freezeTick>0 ? 1.6 : 1; // 减速时放慢
+  const interval = Math.max(42, (BASE_TICK/ (state.speedMul)) * slowBonus);
+
+  if(state.elapsed < interval) return;
+  state.elapsed = 0;
+  state.tickCnt++;
+
+  // bonus & slow 的寿命
+  if(state.bonus && --state.bonus.ttl<=0) state.bonus=null;
+  if(state.freezeTick>0) state.freezeTick--;
+
+  // 走一步
+  state.dir = state.next;
+  const head = {
+    x: wrap(state.snake[0].x + state.dir.x, GRID),
+    y: wrap(state.snake[0].y + state.dir.y, GRID)
+  };
+
+  // 撞自己或障碍
+  if(inSnake(head) || inObst(head)){ return gameOver(); }
+
+  state.snake.unshift(head);
+
+  // 吃东西？
+  let ate=false, color='rgba(34,197,94,1)';
+  if(eq(head, state.food.pos)){
+    ate=true; state.score+=1; color='rgba(34,197,94,1)';
+    state.food = spawnFood('normal');
+    // 随机生成 bonus/slow
+    if(!state.bonus && Math.random()<0.18) state.bonus = spawnFood('bonus');
+    if(!state.slow && Math.random()<0.18) state.slow = spawnFood('slow');
+  } else if(state.bonus && eq(head, state.bonus.pos)){
+    ate=true; state.score+=5; color='rgba(245,158,11,1)';
+    state.bonus=null;
+  } else if(state.slow && eq(head, state.slow.pos)){
+    ate=true; state.score+=1; color='rgba(56,189,248,1)';
+    state.slow=null; state.freezeTick = 55; // 约 2~3 秒
+  }
+
+  if(!ate) state.snake.pop();
+  else spawnParticles(head, color);
+
+  // 升级：每 LVL_STEP 分
+  const newLvl = Math.floor(state.score/LVL_STEP)+1;
+  if(newLvl>state.level){
+    state.level = newLvl;
+    state.speedMul = Math.min(MAX_SPEED_MUL, state.speedMul+1);
+    addObstacles(2 + Math.min(6, Math.floor(state.level/2)));
+  }
+
+  best = Math.max(best, state.score);
+  localStorage.setItem('snake_best_rich', best);
+  updateUI();
+}
+
+function gameOver(){
+  state.running=false; updateUI();
+  // 简易闪烁
+  for(let i=0;i<GRID;i++) spawnParticles({x:randInt(GRID),y:randInt(GRID)}, 'rgba(239,68,68,1)');
+}
+
+// ===== 绘制 =====
+function draw(){
+  // 背景网格
+  ctx.clearRect(0,0,W,H);
+  for(let y=0;y<GRID;y++){
+    for(let x=0;x<GRID;x++){
+      ctx.strokeStyle = 'rgba(148,163,184,.12)';
+      ctx.strokeRect(x*CELL, y*CELL, CELL, CELL);
+    }
+  }
+
+  // 障碍
+  state.obstacles.forEach(o=>{
+    ctx.fillStyle = '#ef4444';
+    roundRect(o.x*CELL+2, o.y*CELL+2, CELL-4, CELL-4, 6, true);
+  });
+
+  // 食物
+  drawFood(state.food);
+  if(state.bonus) drawFood(state.bonus);
+  if(state.slow) drawFood(state.slow);
+
+  // 蛇
+  state.snake.forEach((seg,i)=>{
+    const color = i===0 ? '#eab308' : rainbow(i, state.snake.length, .95);
+    roundRect(seg.x*CELL+2, seg.y*CELL+2, CELL-4, CELL-4, 6, true, color);
+  });
+
+  // 粒子
+  drawParticles();
+
+  // 暂停遮罩
+  if(!state.running){
+    ctx.fillStyle='rgba(2,6,23,.6)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e5e7eb'; ctx.textAlign='center';
+    ctx.font='bold 28px system-ui'; ctx.fillText('暂停 / 游戏结束', W/2, H/2-10);
+    ctx.font='14px system-ui'; ctx.fillText('R 重开，P 继续', W/2, H/2+18);
+  }
+}
+
+function drawFood(f){
+  let color = '#22c55e';
+  if(f.kind==='bonus') color = '#f59e0b';
+  if(f.kind==='slow')  color = '#38bdf8';
+  roundRect(f.pos.x*CELL+4, f.pos.y*CELL+4, CELL-8, CELL-8, 8, true, color);
+}
+
+function roundRect(x,y,w,h,r,fill=true,color='#fff'){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  if(fill) ctx.fill();
+}
+
+// ===== 主循环 =====
+let last=0;
+function loop(ts){
+  const dt = ts - last; last = ts;
+  step(dt); draw();
+  requestAnimationFrame(loop);
+}
+
+// 启动
+reset();
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
