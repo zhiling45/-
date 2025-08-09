@@ -38,10 +38,21 @@
     </div>
 
     <p class="hint">
-      键盘：方向键 / WASD 控制；空格键暂停/继续。<br />
-      手机：在画布上<strong>滑动</strong>控制方向，轻点可暂停/继续。
+      键盘：方向键 / WASD；空格键暂停/继续。<br />
+      手机：滑动控制方向，轻点画布暂停/继续；也可用下方的虚拟方向键。
     </p>
   </main>
+
+  <!-- 移动端虚拟方向键（仅小屏显示） -->
+  <div class="dpad" id="dpad" aria-label="方向控制">
+    <button class="pad up"    data-dx="0"  data-dy="-1" aria-label="上">▲</button>
+    <div class="mid">
+      <button class="pad left"  data-dx="-1" data-dy="0" aria-label="左">◀</button>
+      <button class="pad pause" id="btnMobilePause" aria-label="暂停/继续">⏯</button>
+      <button class="pad right" data-dx="1"  data-dy="0" aria-label="右">▶</button>
+    </div>
+    <button class="pad down"  data-dx="0"  data-dy="1" aria-label="下">▼</button>
+  </div>
 
   <footer class="footer">
     <span>© 2025 Snake by You</span>
