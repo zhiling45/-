@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>贪吃蛇 · 彩色豪华版 v1.1</title>
+<title>贪吃蛇 · 彩色豪华版 v1.2</title>
 <style>
 :root{--bg:#0b1220;--fg:#e5e7eb}
 *{box-sizing:border-box}
@@ -17,6 +17,13 @@ h1{margin:0;font-size:20px}
 .btn{border:1px solid #475569;background:#111827;color:var(--fg);padding:8px 12px;border-radius:12px}
 .board{position:relative;border:1px solid #334155;border-radius:16px;overflow:hidden;background:#020617}
 canvas{width:100%;aspect-ratio:1;display:block;touch-action:none}
+.start-mask{
+  position:absolute; inset:0; display:grid; place-items:center; background:rgba(2,6,23,.6); backdrop-filter:blur(2px);
+}
+.start-btn{
+  background:#16a34a; border:none; color:white; padding:14px 20px; border-radius:14px; font-weight:700; font-size:16px;
+  box-shadow:0 6px 20px rgba(22,163,74,.35);
+}
 .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .pad{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;text-align:center;font-weight:700}
 .pad:active{transform:scale(.98);border-color:#7c3aed}
@@ -50,7 +57,13 @@ footer{opacity:.6;text-align:center;font-size:12px}
       </div>
     </div>
 
-    <div class="board"><canvas id="c" width="528" height="528"></canvas></div>
+    <div class="board">
+      <canvas id="c" width="528" height="528"></canvas>
+      <!-- 首次交互启动用的遮罩与按钮 -->
+      <div id="startMask" class="start-mask">
+        <button id="startBtn" class="start-btn">开始游戏</button>
+      </div>
+    </div>
 
     <div class="controls" id="touchCtrls">
       <div></div><button class="pad" data-d="up">↑</button><div></div>
@@ -70,15 +83,14 @@ const GRID=24, CELL=22, W=GRID*CELL, H=GRID*CELL;
 const BASE=115, STEP=8, MAXMUL=7;
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 const $=id=>document.getElementById(id);
+const startMask=$('startMask'), startBtn=$('startBtn');
 
 let best=+localStorage.getItem('snake_best_rich')||0; $('best').textContent=best;
-let timer=null, interval=BASE;
+let timer=null;
 
-const randInt=n=>(Math.random()*n)|0;
-const eq=(a,b)=>a.x===b.x&&a.y===b.y;
-const inSnake=p=>state.snake.some(s=>eq(s,p));
-const inObs=p=>state.obstacles.some(o=>eq(o,p));
+const rint=n=>(Math.random()*n)|0, eq=(a,b)=>a.x===b.x&&a.y===b.y;
 const wrap=(v,max)=>(v+max)%max;
+const inArr=(p,arr)=>arr.some(s=>s.x===p.x&&s.y===p.y);
 
 function rb(i,n,a=1){const t=i/n,r=Math.floor(255*Math.abs(Math.sin(Math.PI*t)));
 const g=Math.floor(255*Math.abs(Math.sin(Math.PI*(t+.33))));
@@ -89,112 +101,128 @@ const particles=[];
 function boom(p,color){
   for(let i=0;i<10;i++) particles.push({x:p.x*CELL+CELL/2,y:p.y*CELL+CELL/2,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:18,color});
 }
-function drawBoom(){
+function drawParticles(){
   for(let i=particles.length-1;i>=0;i--){
     const P=particles[i]; P.x+=P.vx; P.y+=P.vy; P.life--;
-    const alpha=(P.life/18).toFixed(2); ctx.fillStyle=P.color.replace('1)', alpha+')');
+    const a=(P.life/18).toFixed(2); ctx.fillStyle=P.color.replace('1)',a+')');
     ctx.fillRect(P.x,P.y,3,3); if(P.life<=0) particles.splice(i,1);
   }
 }
 
-let state;
-function freeSpot(){while(1){const p={x:randInt(GRID),y:randInt(GRID)}; if(!inSnake(p)&&!inObs(p)) return p;}}
-function food(kind='normal'){return {kind,pos:freeSpot(),ttl:kind==='bonus'?600:null}}
-function addObs(n){for(let i=0;i<n;i++) state.obstacles.push(freeSpot())}
+let st;
+function freeSpot(){
+  while(true){
+    const p={x:rint(GRID),y:rint(GRID)};
+    if(!inArr(p,st.snake) && !inArr(p,st.obstacles)) return p;
+  }
+}
+function makeFood(kind='normal'){return {kind,pos:freeSpot(),ttl:kind==='bonus'?600:null}}
+function addObs(n){for(let i=0;i<n;i++) st.obstacles.push(freeSpot())}
 
 function reset(){
-  state={snake:[{x:12,y:12},{x:11,y:12},{x:10,y:12}],dir:{x:1,y:0},next:{x:1,y:0},
-    food:food('normal'),bonus:null,slow:null,obstacles:[],score:0,level:1,speedMul:1,
-    freeze:0,running:true};
-  addObs(4); interval=BASE; startLoop(); paint(); ui();
+  st={snake:[{x:12,y:12},{x:11,y:12},{x:10,y:12}],dir:{x:1,y:0},next:{x:1,y:0},
+      food:makeFood('normal'),bonus:null,slow:null,obstacles:[],score:0,level:1,speedMul:1,
+      freeze:0,running:false}; // 初始不运行，等点击“开始”
+  addObs(4); paint(); ui();
 }
-function ui(){ $('score').textContent=state.score; $('level').textContent=state.level;
-  $('speed').textContent=state.speedMul+'x';
-  $('btnPause').textContent = state.running ? '暂停' : '继续';
-  $('padPause').textContent = state.running ? '暂停/继续' : '继续/暂停';
+function ui(){
+  $('score').textContent=st.score; $('level').textContent=st.level;
+  $('speed').textContent=st.speedMul+'x';
+  $('btnPause').textContent = st.running ? '暂停' : '继续';
+  $('padPause').textContent = st.running ? '暂停/继续' : '继续/暂停';
 }
 
 function startLoop(){
   stopLoop();
-  timer=setInterval(tick, Math.max(42, interval/(state.speedMul)*(state.freeze>0?1.6:1)));
+  const interval=Math.max(42, (BASE/st.speedMul)*(st.freeze>0?1.6:1));
+  timer=setInterval(tick, interval);
 }
 function stopLoop(){ if(timer){clearInterval(timer); timer=null} }
+function startGameOnce(){
+  if(st.running) return;
+  st.running=true; startMask.style.display='none'; ui(); startLoop();
+}
 
-function turn(x,y){ if(x===-state.dir.x&&y===-state.dir.y) return; state.next={x,y} }
+// 输入
+function turn(x,y){ if(x===-st.dir.x&&y===-st.dir.y) return; st.next={x,y} }
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
-  if(k==='arrowup'||k==='w')turn(0,-1);
-  if(k==='arrowdown'||k==='s')turn(0,1);
-  if(k==='arrowleft'||k==='a')turn(-1,0);
-  if(k==='arrowright'||k==='d')turn(1,0);
-  if(k==='p')toggle();
-  if(k==='r')reset();
+  if(k==='arrowup'||k==='w'){turn(0,-1); startGameOnce();}
+  if(k==='arrowdown'||k==='s'){turn(0,1);  startGameOnce();}
+  if(k==='arrowleft'||k==='a'){turn(-1,0); startGameOnce();}
+  if(k==='arrowright'||k==='d'){turn(1,0); startGameOnce();}
+  if(k==='p') toggle();
+  if(k==='r') reset();
 });
-$('btnPause').onclick=toggle; $('btnRestart').onclick=reset; $('padPause').onclick=toggle;
-document.getElementById('touchCtrls').addEventListener('click',e=>{
-  const d=e.target.dataset.d; if(d==='up')turn(0,-1); if(d==='down')turn(0,1);
-  if(d==='left')turn(-1,0); if(d==='right')turn(1,0);
+$('btnPause').onclick=toggle; $('btnRestart').onclick=()=>{reset(); startMask.style.display='grid'};
+$('padPause').onclick=toggle;
+$('touchCtrls').addEventListener('click',e=>{
+  const d=e.target.dataset.d;
+  if(d==='up'){turn(0,-1); startGameOnce();}
+  if(d==='down'){turn(0,1); startGameOnce();}
+  if(d==='left'){turn(-1,0); startGameOnce();}
+  if(d==='right'){turn(1,0); startGameOnce();}
 });
-let ts=null; cv.addEventListener('touchstart',e=>{ts=e.touches[0]});
-cv.addEventListener('touchmove',e=>{
-  if(!ts) return; const t=e.touches[0],dx=t.clientX-ts.clientX,dy=t.clientY-ts.clientY;
-  if(Math.abs(dx)+Math.abs(dy)>24){ if(Math.abs(dx)>Math.abs(dy))turn(Math.sign(dx),0); else turn(0,Math.sign(dy)); ts=null; }
-},{passive:true});
-cv.addEventListener('touchend',()=>ts=null);
+startBtn.onclick=()=>startGameOnce();
 
-function toggle(){ state.running=!state.running; ui(); state.running?startLoop():stopLoop() }
+let tStart=null; cv.addEventListener('touchstart',e=>{tStart=e.touches[0]});
+cv.addEventListener('touchmove',e=>{
+  if(!tStart) return; const t=e.touches[0],dx=t.clientX-tStart.clientX,dy=t.clientY-tStart.clientY;
+  if(Math.abs(dx)+Math.abs(dy)>24){
+    if(Math.abs(dx)>Math.abs(dy)) turn(Math.sign(dx),0); else turn(0,Math.sign(dy));
+    startGameOnce(); tStart=null;
+  }
+},{passive:true});
+cv.addEventListener('touchend',()=>tStart=null);
+
+function toggle(){ st.running=!st.running; ui(); st.running?startLoop():stopLoop() }
 
 function tick(){
-  if(!state.running) return;
-  if(state.bonus && --state.bonus.ttl<=0) state.bonus=null;
-  if(state.freeze>0) state.freeze--;
+  if(!st.running) return;
+  if(st.bonus && --st.bonus.ttl<=0) st.bonus=null;
+  if(st.freeze>0) st.freeze--;
 
-  state.dir=state.next;
-  const head={x:wrap(state.snake[0].x+state.dir.x,GRID),y:wrap(state.snake[0].y+state.dir.y,GRID)};
-  if(inSnake(head)||inObs(head)){ gameOver(); return; }
-  state.snake.unshift(head);
+  st.dir=st.next;
+  const head={x:wrap(st.snake[0].x+st.dir.x,GRID),y:wrap(st.snake[0].y+st.dir.y,GRID)};
+  if(inArr(head,st.snake)||inArr(head,st.obstacles)){ gameOver(); return; }
+  st.snake.unshift(head);
 
   let ate=false,color='rgba(34,197,94,1)';
-  if(eq(head,state.food.pos)){ ate=true; state.score+=1; state.food=food('normal');
-    if(!state.bonus && Math.random()<.18) state.bonus=food('bonus');
-    if(!state.slow && Math.random()<.18)  state.slow=food('slow'); }
-  else if(state.bonus && eq(head,state.bonus.pos)){ ate=true; state.score+=5; color='rgba(245,158,11,1)'; state.bonus=null; }
-  else if(state.slow && eq(head,state.slow.pos)){ ate=true; color='rgba(56,189,248,1)'; state.slow=null; state.freeze=55; }
+  if(eq(head,st.food.pos)){ ate=true; st.score+=1; st.food=makeFood('normal');
+    if(!st.bonus && Math.random()<.18) st.bonus=makeFood('bonus');
+    if(!st.slow && Math.random()<.18)  st.slow=makeFood('slow'); }
+  else if(st.bonus && eq(head,st.bonus.pos)){ ate=true; st.score+=5; color='rgba(245,158,11,1)'; st.bonus=null; }
+  else if(st.slow && eq(head,st.slow.pos)){ ate=true; color='rgba(56,189,248,1)'; st.slow=null; st.freeze=55; }
 
-  if(!ate) state.snake.pop(); else boom(head,color);
+  if(!ate) st.snake.pop(); else boom(head,color);
 
-  const lv=Math.floor(state.score/STEP)+1;
-  if(lv>state.level){ state.level=lv; state.speedMul=Math.min(MAXMUL,state.speedMul+1); addObs(2+Math.min(6,Math.floor(lv/2))); startLoop(); }
+  const lv=Math.floor(st.score/STEP)+1;
+  if(lv>st.level){ st.level=lv; st.speedMul=Math.min(MAXMUL,st.speedMul+1); addObs(2+Math.min(6,Math.floor(lv/2))); startLoop(); }
 
-  best=Math.max(best,state.score); localStorage.setItem('snake_best_rich',best);
+  best=Math.max(best,st.score); localStorage.setItem('snake_best_rich',best);
   ui(); paint();
 }
 
-function gameOver(){ state.running=false; ui(); stopLoop(); boom({x:randInt(GRID),y:randInt(GRID)},'rgba(239,68,68,1)') }
+function gameOver(){ st.running=false; ui(); stopLoop(); startMask.style.display='grid'; }
 
 function rr(x,y,w,h,r,c){ ctx.beginPath(); ctx.moveTo(x+r,y);
   ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
   ctx.closePath(); ctx.fillStyle=c; ctx.fill(); }
 
-function paint(){
-  ctx.clearRect(0,0,W,H);
-  for(let y=0;y<GRID;y++) for(let x=0;x<GRID;x++){ ctx.strokeStyle='rgba(148,163,184,.12)'; ctx.strokeRect(x*CELL,y*CELL,CELL,CELL); }
-  // 障碍
-  state.obstacles.forEach(o=> rr(o.x*CELL+2,o.y*CELL+2,CELL-4,CELL-4,6,'#ef4444'));
-  // 食物
-  drawFood(state.food); if(state.bonus)drawFood(state.bonus); if(state.slow)drawFood(state.slow);
-  // 蛇
-  state.snake.forEach((s,i)=> rr(s.x*CELL+2,s.y*CELL+2,CELL-4,CELL-4,6, i? rb(i,state.snake.length,.95): '#eab308'));
-  drawBoom();
-  if(!state.running){ ctx.fillStyle='rgba(2,6,23,.6)'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#e5e7eb'; ctx.textAlign='center'; ctx.font='bold 28px system-ui'; ctx.fillText('暂停 / 游戏结束', W/2,H/2-10);
-    ctx.font='14px system-ui'; ctx.fillText('R 重开，P 继续', W/2,H/2+18); }
-}
 function drawFood(f){ let c='#22c55e'; if(f.kind==='bonus')c='#f59e0b'; if(f.kind==='slow')c='#38bdf8';
   rr(f.pos.x*CELL+4,f.pos.y*CELL+4,CELL-8,CELL-8,8,c); }
 
-// 启动（首帧就画并自动开局）
-reset(); paint();
+function paint(){
+  ctx.clearRect(0,0,W,H);
+  for(let y=0;y<GRID;y++) for(let x=0;x<GRID;x++){ ctx.strokeStyle='rgba(148,163,184,.12)'; ctx.strokeRect(x*CELL,y*CELL,CELL,CELL); }
+  st.obstacles.forEach(o=> rr(o.x*CELL+2,o.y*CELL+2,CELL-4,CELL-4,6,'#ef4444'));
+  drawFood(st.food); if(st.bonus)drawFood(st.bonus); if(st.slow)drawFood(st.slow);
+  st.snake.forEach((s,i)=> rr(s.x*CELL+2,s.y*CELL+2,CELL-4,CELL-4,6, i? rb(i,st.snake.length,.95): '#eab308'));
+  drawParticles();
+}
+
+// 启动到“等待开始”状态
+reset();
 })();
 </script>
 </body>
