@@ -1,0 +1,165 @@
+:root{
+  --bg1:#0f172a;          /* 背景深色 */
+  --bg2:#111827;          /* 背景次级色 */
+  --card:#111827cc;       /* 面板 */
+  --text:#e5e7eb;         /* 文字 */
+  --muted:#9ca3af;        /* 次要文字 */
+  --accent:#22c55e;       /* 蛇身主色 */
+  --accent-2:#16a34a;     /* 蛇头颜色 */
+  --food:#fb7185;         /* 食物颜色 */
+  --btn:#1f2937;
+  --btn-hover:#374151;
+  --danger:#dc2626;
+  --shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body{
+  margin:0;
+  color:var(--text);
+  background: radial-gradient(1200px 800px at 70% -10%, #172554 0%, var(--bg1) 40%, var(--bg2) 100%);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, "Noto Sans CJK SC", "Microsoft YaHei", "Heiti SC", sans-serif;
+  display:flex;
+  flex-direction:column;
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding: 1rem clamp(.75rem, 3vw, 2rem);
+}
+
+.title{
+  margin:0;
+  font-size: clamp(20px, 3.5vw, 28px);
+  font-weight:700;
+  letter-spacing:.5px;
+}
+
+.scoreboard{
+  display:flex;
+  gap: clamp(1rem, 4vw, 2rem);
+  font-weight:600;
+}
+
+.game-area{
+  width:100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 clamp(.75rem, 3vw, 2rem) 2rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:1rem;
+}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  gap:.75rem;
+  padding: .75rem;
+  background: var(--card);
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.btn{
+  appearance:none;
+  border:none;
+  outline:none;
+  background: var(--btn);
+  color: var(--text);
+  padding: .65rem 1rem;
+  border-radius: 10px;
+  font-weight:600;
+  letter-spacing:.3px;
+  cursor:pointer;
+  transition: transform .06s ease, background .2s ease, box-shadow .2s ease;
+  box-shadow: 0 2px 0 rgba(255,255,255,.06), inset 0 -2px 0 rgba(0,0,0,.35);
+}
+.btn:hover{ background: var(--btn-hover); transform: translateY(-1px); }
+.btn:active{ transform: translateY(0); }
+.btn.primary{ background: linear-gradient(180deg, #2563eb, #1d4ed8); }
+.btn.primary:hover{ background: linear-gradient(180deg, #3b82f6, #2563eb); }
+.btn.danger{ background: linear-gradient(180deg, #ef4444, var(--danger)); }
+.btn.danger:hover{ background: linear-gradient(180deg, #f87171, #ef4444); }
+.btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+.toggle{
+  display:flex;
+  align-items:center;
+  gap:.4rem;
+  color:var(--muted);
+  user-select:none;
+}
+
+.canvas-wrap{
+  position:relative;
+  width: min(92vmin, 680px);
+  aspect-ratio: 1/1;
+  border-radius: 16px;
+  overflow:hidden;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.06), transparent 45%),
+    radial-gradient(120% 120% at 100% 100%, rgba(255,255,255,.04), transparent 45%),
+    linear-gradient(180deg, #0b1220, #0a0f1a);
+  border:1px solid #1f2937;
+  box-shadow: var(--shadow);
+}
+
+#game{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+.overlay{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(1px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-weight:800;
+  letter-spacing:1px;
+  color:#fff;
+  font-size: clamp(22px, 4.5vw, 36px);
+}
+.overlay.hidden{ display:none; }
+.overlay #overlayText{
+  padding: .75rem 1rem;
+  border-radius: 12px;
+  background: rgba(17,24,39,.65);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: var(--shadow);
+}
+
+.hint{
+  color: var(--muted);
+  text-align:center;
+  margin: .25rem 0 0;
+  font-size: .95rem;
+}
+
+.footer{
+  margin-top:auto;
+  padding: 1rem;
+  color: var(--muted);
+  text-align:center;
+  font-size:.9rem;
+  opacity:.8;
+}
+
+/* 小屏优化点击区域 */
+@media (max-width: 420px){
+  .btn{ padding: .6rem .9rem; }
+  .controls{ gap:.5rem; }
+}
