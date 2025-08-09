@@ -3,41 +3,26 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>贪吃蛇 · 彩色豪华版</title>
+<title>贪吃蛇 · 彩色豪华版 v1.1</title>
 <style>
-:root{
-  --bg:#0b1220; --panel:#111827; --line:#263246; --fg:#e5e7eb;
-  --accent:#7c3aed; --ok:#22c55e; --warn:#f59e0b; --cool:#38bdf8; --bad:#ef4444;
-}
+:root{--bg:#0b1220;--fg:#e5e7eb}
 *{box-sizing:border-box}
-body{
-  margin:0; background: radial-gradient(1000px 600px at 10% -10%, #1d2640 0%, #0b1220 40%, #090f1a 100%);
-  color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
-  min-height:100vh; display:grid; place-items:center; padding:16px;
-}
-.wrap{width:100%; max-width:620px; display:grid; gap:12px}
-.top{display:flex; justify-content:space-between; align-items:center; gap:8px}
-h1{margin:0; font-size:20px; letter-spacing:.5px}
-.stats{display:flex; gap:8px; flex-wrap:wrap}
-.pill{border:1px solid #334155; padding:4px 10px; border-radius:999px; background:rgba(17,24,39,.6); backdrop-filter: blur(4px); font-size:13px}
-.btn{
-  border:1px solid #475569; background:linear-gradient(180deg,#111827,#0f172a); color:var(--fg);
-  padding:8px 12px; border-radius:12px; cursor:pointer;
-}
-.btn:hover{border-color:var(--accent)}
-.board{
-  position:relative; border:1px solid #334155; border-radius:16px; overflow:hidden;
-  background: radial-gradient(900px 500px at 80% -20%, rgba(124,58,237,.15), transparent),
-              radial-gradient(900px 500px at 20% 120%, rgba(56,189,248,.12), transparent),
-              #020617;
-}
-canvas{width:100%; aspect-ratio:1; display:block; touch-action:none}
-.controls{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
-.pad{background:#0f172a; border:1px solid #334155; border-radius:12px; padding:16px; text-align:center; font-weight:700}
-.pad:active{transform:scale(.98); border-color:var(--accent)}
-.legend{display:flex; gap:8px; flex-wrap:wrap; font-size:12px; opacity:.9}
-.dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:-1px}
-footer{opacity:.6; text-align:center; font-size:12px}
+body{margin:0;background:radial-gradient(1000px 600px at 10% -10%, #1d2640 0%, #0b1220 40%, #090f1a 100%);color:var(--fg);
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  min-height:100vh;display:grid;place-items:center;padding:16px}
+.wrap{width:100%;max-width:620px;display:grid;gap:12px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1{margin:0;font-size:20px}
+.stats{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid #334155;padding:4px 10px;border-radius:999px;background:rgba(17,24,39,.6)}
+.btn{border:1px solid #475569;background:#111827;color:var(--fg);padding:8px 12px;border-radius:12px}
+.board{position:relative;border:1px solid #334155;border-radius:16px;overflow:hidden;background:#020617}
+canvas{width:100%;aspect-ratio:1;display:block;touch-action:none}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;text-align:center;font-weight:700}
+.pad:active{transform:scale(.98);border-color:#7c3aed}
+.legend{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;opacity:.9}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+footer{opacity:.6;text-align:center;font-size:12px}
 </style>
 </head>
 <body>
@@ -65,7 +50,7 @@ footer{opacity:.6; text-align:center; font-size:12px}
       </div>
     </div>
 
-    <div class="board"><canvas id="c" width="540" height="540"></canvas></div>
+    <div class="board"><canvas id="c" width="528" height="528"></canvas></div>
 
     <div class="controls" id="touchCtrls">
       <div></div><button class="pad" data-d="up">↑</button><div></div>
@@ -75,283 +60,141 @@ footer{opacity:.6; text-align:center; font-size:12px}
       <div></div><button class="pad" id="padPause">暂停/继续</button><div></div>
     </div>
 
-    <footer>键盘：↑↓←→ 或 WASD；P 暂停；R 重开；手机支持滑动</footer>
+    <footer>键盘：↑↓←→ / WASD；P 暂停；R 重开；手机支持滑动</footer>
   </div>
 
 <script>
 (()=>{
-// ===== 基本参数 =====
-const GRID = 24;               // 24x24
-const CELL = 22;               // 像素
-const W = GRID*CELL, H = GRID*CELL;
-const BASE_TICK = 115;         // 基础速度（毫秒越小越快）
-const LVL_STEP = 8;            // 每 LVL_STEP 分加一关
-const MAX_SPEED_MUL = 7;
+// ===== 参数 =====
+const GRID=24, CELL=22, W=GRID*CELL, H=GRID*CELL;
+const BASE=115, STEP=8, MAXMUL=7;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const $=id=>document.getElementById(id);
 
-const cv = document.getElementById('c');
-const ctx = cv.getContext('2d');
-const $ = id => document.getElementById(id);
+let best=+localStorage.getItem('snake_best_rich')||0; $('best').textContent=best;
+let timer=null, interval=BASE;
 
-let best = +localStorage.getItem('snake_best_rich') || 0;
-$('best').textContent = best;
+const randInt=n=>(Math.random()*n)|0;
+const eq=(a,b)=>a.x===b.x&&a.y===b.y;
+const inSnake=p=>state.snake.some(s=>eq(s,p));
+const inObs=p=>state.obstacles.some(o=>eq(o,p));
+const wrap=(v,max)=>(v+max)%max;
 
-let state;
+function rb(i,n,a=1){const t=i/n,r=Math.floor(255*Math.abs(Math.sin(Math.PI*t)));
+const g=Math.floor(255*Math.abs(Math.sin(Math.PI*(t+.33))));
+const b=Math.floor(255*Math.abs(Math.sin(Math.PI*(t+.66))));
+return `rgba(${r},${g},${b},${a})`}
 
-// ===== 工具函数 =====
-const randInt = n => (Math.random()*n)|0;
-const eq = (a,b)=>a.x===b.x && a.y===b.y;
-const inSnake = (p)=> state.snake.some(s=>eq(s,p));
-const inObst  = (p)=> state.obstacles.some(o=>eq(o,p));
-function freeSpot(){
-  while(true){
-    const p={x:randInt(GRID), y:randInt(GRID)};
-    if(!inSnake(p) && !inObst(p)) return p;
-  }
-}
-function wrap(val, max){ return (val+max)%max; }
-
-// 彩虹颜色
-function rainbow(i, total, a=1){
-  const t = (i/total);
-  const r = Math.floor(255*Math.abs(Math.sin(Math.PI*t)));
-  const g = Math.floor(255*Math.abs(Math.sin(Math.PI*(t+.33))));
-  const b = Math.floor(255*Math.abs(Math.sin(Math.PI*(t+.66))));
-  return `rgba(${r},${g},${b},${a})`;
-}
-
-// 粒子系统（吃到食物时）
 const particles=[];
-function spawnParticles(p, color){
-  for(let i=0;i<10;i++){
-    particles.push({
-      x:p.x*CELL+CELL/2, y:p.y*CELL+CELL/2, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3,
-      life:18, color
-    });
-  }
+function boom(p,color){
+  for(let i=0;i<10;i++) particles.push({x:p.x*CELL+CELL/2,y:p.y*CELL+CELL/2,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:18,color});
 }
-function drawParticles(){
+function drawBoom(){
   for(let i=particles.length-1;i>=0;i--){
     const P=particles[i]; P.x+=P.vx; P.y+=P.vy; P.life--;
-    ctx.fillStyle=P.color.replace('1)', (P.life/18).toFixed(2)+')');
-    ctx.fillRect(P.x, P.y, 3, 3);
-    if(P.life<=0) particles.splice(i,1);
+    const alpha=(P.life/18).toFixed(2); ctx.fillStyle=P.color.replace('1)', alpha+')');
+    ctx.fillRect(P.x,P.y,3,3); if(P.life<=0) particles.splice(i,1);
   }
 }
 
-// ===== 游戏状态与控制 =====
+let state;
+function freeSpot(){while(1){const p={x:randInt(GRID),y:randInt(GRID)}; if(!inSnake(p)&&!inObs(p)) return p;}}
+function food(kind='normal'){return {kind,pos:freeSpot(),ttl:kind==='bonus'?600:null}}
+function addObs(n){for(let i=0;i<n;i++) state.obstacles.push(freeSpot())}
+
 function reset(){
-  state = {
-    snake: [{x:12,y:12},{x:11,y:12},{x:10,y:12}],
-    dir: {x:1,y:0}, next: {x:1,y:0},
-    food: spawnFood('normal'),
-    bonus: null,
-    slow: null,
-    obstacles: [],
-    score:0, level:1, speedMul:1,
-    freezeTick:0,
-    running:true, tickCnt:0, elapsed:0
-  };
-  // 初始障碍
-  addObstacles(4);
-  updateUI();
+  state={snake:[{x:12,y:12},{x:11,y:12},{x:10,y:12}],dir:{x:1,y:0},next:{x:1,y:0},
+    food:food('normal'),bonus:null,slow:null,obstacles:[],score:0,level:1,speedMul:1,
+    freeze:0,running:true};
+  addObs(4); interval=BASE; startLoop(); paint(); ui();
 }
-function updateUI(){
-  $('score').textContent = state.score;
-  $('level').textContent = state.level;
-  $('speed').textContent = state.speedMul+'x';
+function ui(){ $('score').textContent=state.score; $('level').textContent=state.level;
+  $('speed').textContent=state.speedMul+'x';
   $('btnPause').textContent = state.running ? '暂停' : '继续';
   $('padPause').textContent = state.running ? '暂停/继续' : '继续/暂停';
 }
 
-function addObstacles(n){
-  for(let i=0;i<n;i++){
-    const p = freeSpot();
-    state.obstacles.push(p);
-  }
+function startLoop(){
+  stopLoop();
+  timer=setInterval(tick, Math.max(42, interval/(state.speedMul)*(state.freeze>0?1.6:1)));
 }
+function stopLoop(){ if(timer){clearInterval(timer); timer=null} }
 
-function spawnFood(kind='normal'){
-  const p = freeSpot();
-  return {kind, pos:p, ttl: kind==='bonus'? 600: null};
-}
-
-// ===== 输入处理 =====
-function turn(x,y){
-  if(x === -state.dir.x && y === -state.dir.y) return;
-  state.next = {x,y};
-}
-window.addEventListener('keydown',e=>{
+function turn(x,y){ if(x===-state.dir.x&&y===-state.dir.y) return; state.next={x,y} }
+addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
-  if(k==='arrowup'||k==='w') turn(0,-1);
-  if(k==='arrowdown'||k==='s') turn(0,1);
-  if(k==='arrowleft'||k==='a') turn(-1,0);
-  if(k==='arrowright'||k==='d') turn(1,0);
-  if(k==='p') toggle();
-  if(k==='r') reset();
+  if(k==='arrowup'||k==='w')turn(0,-1);
+  if(k==='arrowdown'||k==='s')turn(0,1);
+  if(k==='arrowleft'||k==='a')turn(-1,0);
+  if(k==='arrowright'||k==='d')turn(1,0);
+  if(k==='p')toggle();
+  if(k==='r')reset();
 });
-
-$('btnPause').onclick = toggle;
-$('btnRestart').onclick = ()=>reset();
-$('padPause').onclick = toggle;
-
-function toggle(){ state.running=!state.running; updateUI() }
-
-// 触控按钮
+$('btnPause').onclick=toggle; $('btnRestart').onclick=reset; $('padPause').onclick=toggle;
 document.getElementById('touchCtrls').addEventListener('click',e=>{
-  const d = e.target.dataset.d;
-  if(d==='up')turn(0,-1); if(d==='down')turn(0,1);
+  const d=e.target.dataset.d; if(d==='up')turn(0,-1); if(d==='down')turn(0,1);
   if(d==='left')turn(-1,0); if(d==='right')turn(1,0);
 });
-// 滑动手势
-let touchStart=null;
-cv.addEventListener('touchstart',e=>{touchStart = e.touches[0]});
+let ts=null; cv.addEventListener('touchstart',e=>{ts=e.touches[0]});
 cv.addEventListener('touchmove',e=>{
-  if(!touchStart) return;
-  const t=e.touches[0]; const dx=t.clientX-touchStart.clientX; const dy=t.clientY-touchStart.clientY;
-  if(Math.abs(dx)+Math.abs(dy) > 24){
-    if(Math.abs(dx)>Math.abs(dy)) turn(Math.sign(dx),0); else turn(0,Math.sign(dy));
-    touchStart=null;
-  }
-});
-cv.addEventListener('touchend',()=>touchStart=null);
+  if(!ts) return; const t=e.touches[0],dx=t.clientX-ts.clientX,dy=t.clientY-ts.clientY;
+  if(Math.abs(dx)+Math.abs(dy)>24){ if(Math.abs(dx)>Math.abs(dy))turn(Math.sign(dx),0); else turn(0,Math.sign(dy)); ts=null; }
+},{passive:true});
+cv.addEventListener('touchend',()=>ts=null);
 
-// ===== 逻辑更新 =====
-function step(dt){
+function toggle(){ state.running=!state.running; ui(); state.running?startLoop():stopLoop() }
+
+function tick(){
   if(!state.running) return;
-
-  state.elapsed += dt;
-  const slowBonus = state.freezeTick>0 ? 1.6 : 1; // 减速时放慢
-  const interval = Math.max(42, (BASE_TICK/ (state.speedMul)) * slowBonus);
-
-  if(state.elapsed < interval) return;
-  state.elapsed = 0;
-  state.tickCnt++;
-
-  // bonus & slow 的寿命
   if(state.bonus && --state.bonus.ttl<=0) state.bonus=null;
-  if(state.freezeTick>0) state.freezeTick--;
+  if(state.freeze>0) state.freeze--;
 
-  // 走一步
-  state.dir = state.next;
-  const head = {
-    x: wrap(state.snake[0].x + state.dir.x, GRID),
-    y: wrap(state.snake[0].y + state.dir.y, GRID)
-  };
-
-  // 撞自己或障碍
-  if(inSnake(head) || inObst(head)){ return gameOver(); }
-
+  state.dir=state.next;
+  const head={x:wrap(state.snake[0].x+state.dir.x,GRID),y:wrap(state.snake[0].y+state.dir.y,GRID)};
+  if(inSnake(head)||inObs(head)){ gameOver(); return; }
   state.snake.unshift(head);
 
-  // 吃东西？
-  let ate=false, color='rgba(34,197,94,1)';
-  if(eq(head, state.food.pos)){
-    ate=true; state.score+=1; color='rgba(34,197,94,1)';
-    state.food = spawnFood('normal');
-    // 随机生成 bonus/slow
-    if(!state.bonus && Math.random()<0.18) state.bonus = spawnFood('bonus');
-    if(!state.slow && Math.random()<0.18) state.slow = spawnFood('slow');
-  } else if(state.bonus && eq(head, state.bonus.pos)){
-    ate=true; state.score+=5; color='rgba(245,158,11,1)';
-    state.bonus=null;
-  } else if(state.slow && eq(head, state.slow.pos)){
-    ate=true; state.score+=1; color='rgba(56,189,248,1)';
-    state.slow=null; state.freezeTick = 55; // 约 2~3 秒
-  }
+  let ate=false,color='rgba(34,197,94,1)';
+  if(eq(head,state.food.pos)){ ate=true; state.score+=1; state.food=food('normal');
+    if(!state.bonus && Math.random()<.18) state.bonus=food('bonus');
+    if(!state.slow && Math.random()<.18)  state.slow=food('slow'); }
+  else if(state.bonus && eq(head,state.bonus.pos)){ ate=true; state.score+=5; color='rgba(245,158,11,1)'; state.bonus=null; }
+  else if(state.slow && eq(head,state.slow.pos)){ ate=true; color='rgba(56,189,248,1)'; state.slow=null; state.freeze=55; }
 
-  if(!ate) state.snake.pop();
-  else spawnParticles(head, color);
+  if(!ate) state.snake.pop(); else boom(head,color);
 
-  // 升级：每 LVL_STEP 分
-  const newLvl = Math.floor(state.score/LVL_STEP)+1;
-  if(newLvl>state.level){
-    state.level = newLvl;
-    state.speedMul = Math.min(MAX_SPEED_MUL, state.speedMul+1);
-    addObstacles(2 + Math.min(6, Math.floor(state.level/2)));
-  }
+  const lv=Math.floor(state.score/STEP)+1;
+  if(lv>state.level){ state.level=lv; state.speedMul=Math.min(MAXMUL,state.speedMul+1); addObs(2+Math.min(6,Math.floor(lv/2))); startLoop(); }
 
-  best = Math.max(best, state.score);
-  localStorage.setItem('snake_best_rich', best);
-  updateUI();
+  best=Math.max(best,state.score); localStorage.setItem('snake_best_rich',best);
+  ui(); paint();
 }
 
-function gameOver(){
-  state.running=false; updateUI();
-  // 简易闪烁
-  for(let i=0;i<GRID;i++) spawnParticles({x:randInt(GRID),y:randInt(GRID)}, 'rgba(239,68,68,1)');
-}
+function gameOver(){ state.running=false; ui(); stopLoop(); boom({x:randInt(GRID),y:randInt(GRID)},'rgba(239,68,68,1)') }
 
-// ===== 绘制 =====
-function draw(){
-  // 背景网格
+function rr(x,y,w,h,r,c){ ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath(); ctx.fillStyle=c; ctx.fill(); }
+
+function paint(){
   ctx.clearRect(0,0,W,H);
-  for(let y=0;y<GRID;y++){
-    for(let x=0;x<GRID;x++){
-      ctx.strokeStyle = 'rgba(148,163,184,.12)';
-      ctx.strokeRect(x*CELL, y*CELL, CELL, CELL);
-    }
-  }
-
+  for(let y=0;y<GRID;y++) for(let x=0;x<GRID;x++){ ctx.strokeStyle='rgba(148,163,184,.12)'; ctx.strokeRect(x*CELL,y*CELL,CELL,CELL); }
   // 障碍
-  state.obstacles.forEach(o=>{
-    ctx.fillStyle = '#ef4444';
-    roundRect(o.x*CELL+2, o.y*CELL+2, CELL-4, CELL-4, 6, true);
-  });
-
+  state.obstacles.forEach(o=> rr(o.x*CELL+2,o.y*CELL+2,CELL-4,CELL-4,6,'#ef4444'));
   // 食物
-  drawFood(state.food);
-  if(state.bonus) drawFood(state.bonus);
-  if(state.slow) drawFood(state.slow);
-
+  drawFood(state.food); if(state.bonus)drawFood(state.bonus); if(state.slow)drawFood(state.slow);
   // 蛇
-  state.snake.forEach((seg,i)=>{
-    const color = i===0 ? '#eab308' : rainbow(i, state.snake.length, .95);
-    roundRect(seg.x*CELL+2, seg.y*CELL+2, CELL-4, CELL-4, 6, true, color);
-  });
-
-  // 粒子
-  drawParticles();
-
-  // 暂停遮罩
-  if(!state.running){
-    ctx.fillStyle='rgba(2,6,23,.6)'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#e5e7eb'; ctx.textAlign='center';
-    ctx.font='bold 28px system-ui'; ctx.fillText('暂停 / 游戏结束', W/2, H/2-10);
-    ctx.font='14px system-ui'; ctx.fillText('R 重开，P 继续', W/2, H/2+18);
-  }
+  state.snake.forEach((s,i)=> rr(s.x*CELL+2,s.y*CELL+2,CELL-4,CELL-4,6, i? rb(i,state.snake.length,.95): '#eab308'));
+  drawBoom();
+  if(!state.running){ ctx.fillStyle='rgba(2,6,23,.6)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e5e7eb'; ctx.textAlign='center'; ctx.font='bold 28px system-ui'; ctx.fillText('暂停 / 游戏结束', W/2,H/2-10);
+    ctx.font='14px system-ui'; ctx.fillText('R 重开，P 继续', W/2,H/2+18); }
 }
+function drawFood(f){ let c='#22c55e'; if(f.kind==='bonus')c='#f59e0b'; if(f.kind==='slow')c='#38bdf8';
+  rr(f.pos.x*CELL+4,f.pos.y*CELL+4,CELL-8,CELL-8,8,c); }
 
-function drawFood(f){
-  let color = '#22c55e';
-  if(f.kind==='bonus') color = '#f59e0b';
-  if(f.kind==='slow')  color = '#38bdf8';
-  roundRect(f.pos.x*CELL+4, f.pos.y*CELL+4, CELL-8, CELL-8, 8, true, color);
-}
-
-function roundRect(x,y,w,h,r,fill=true,color='#fff'){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  if(fill) ctx.fill();
-}
-
-// ===== 主循环 =====
-let last=0;
-function loop(ts){
-  const dt = ts - last; last = ts;
-  step(dt); draw();
-  requestAnimationFrame(loop);
-}
-
-// 启动
-reset();
-requestAnimationFrame(loop);
-
+// 启动（首帧就画并自动开局）
+reset(); paint();
 })();
 </script>
 </body>
