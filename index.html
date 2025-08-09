@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>贪吃蛇 Snake</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="title">贪吃蛇 Snake</h1>
+    <div class="scoreboard">
+      <div>分数：<span id="score">0</span></div>
+      <div>最高分：<span id="highScore">0</span></div>
+    </div>
+  </header>
+
+  <main class="game-area">
+    <div class="controls">
+      <button id="btnStart" class="btn primary">开始</button>
+      <button id="btnPause" class="btn">暂停</button>
+      <button id="btnRestart" class="btn danger">重新开始</button>
+      <label class="toggle">
+        <input type="checkbox" id="toggleSfx" checked />
+        <span>音效</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="toggleBgm" />
+        <span>音乐</span>
+      </label>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="game" width="600" height="600" aria-label="贪吃蛇游戏画布"></canvas>
+      <div id="overlay" class="overlay hidden">
+        <div id="overlayText">游戏结束</div>
+      </div>
+    </div>
+
+    <p class="hint">
+      键盘：方向键 / WASD 控制；空格键暂停/继续。<br />
+      手机：在画布上<strong>滑动</strong>控制方向，轻点可暂停/继续。
+    </p>
+  </main>
+
+  <footer class="footer">
+    <span>© 2025 Snake by You</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
